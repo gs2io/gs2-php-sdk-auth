@@ -3,7 +3,7 @@
 	"version" : "0.1.0",
 	"license" : "Apache-2.0",
 	"require" : {
-		"gs2/gs2-php-sdk-core" : ">= 0.0.1"
+		"gs2/gs2-php-sdk-core" : ">= 0.1.0"
 	},
 	"config": {
         "secure-http": false
