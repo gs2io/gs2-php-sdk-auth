@@ -78,7 +78,7 @@ class Gs2AuthClient extends AbstractGs2Client {
                         Gs2Auth::MODULE,
                         CreateOnceOnetimeTokenRequest::FUNCTION,
                         self::$ENDPOINT,
-				        self::ENDPOINT_HOST. "/onetime/once/token",
+				        "/onetime/once/token",
 				        json_encode($body),
                         $alternativeParams
                 )
@@ -113,7 +113,7 @@ class Gs2AuthClient extends AbstractGs2Client {
                         Gs2Auth::MODULE,
                         CreateTimeOnetimeTokenRequest::FUNCTION,
                         self::$ENDPOINT,
-				        self::ENDPOINT_HOST. "/onetime/time/token",
+				        "/onetime/time/token",
 				        json_encode($body),
                         $alternativeParams
                 )
@@ -148,7 +148,7 @@ class Gs2AuthClient extends AbstractGs2Client {
                         Gs2Auth::MODULE,
                         LoginRequest::FUNCTION,
                         self::$ENDPOINT,
-				        self::ENDPOINT_HOST. "/login",
+				        "/login",
 				        json_encode($body),
                         $alternativeParams
                 )
@@ -185,7 +185,7 @@ class Gs2AuthClient extends AbstractGs2Client {
                         Gs2Auth::MODULE,
                         LoginWithSignRequest::FUNCTION,
                         self::$ENDPOINT,
-				        self::ENDPOINT_HOST. "/login/signed",
+				        "/login/signed",
 				        json_encode($body),
                         $alternativeParams
                 )
