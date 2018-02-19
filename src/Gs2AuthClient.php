@@ -1,92 +1,196 @@
 <?php
 /*
- Copyright Game Server Services, Inc.
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+ * Copyright 2016-2018 Game Server Services, Inc. or its affiliates. All Rights
+ * Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
-namespace GS2\Auth;
+namespace Gs2\Auth;
 
-use GS2\Core\Gs2Credentials as Gs2Credentials;
-use GS2\Core\AbstractGs2Client as AbstractGs2Client;
-use GS2\Core\Exception\NullPointerException as NullPointerException;
+use Gs2\Core\AbstractGs2Client;
+use Gs2\Core\Model\IGs2Credential;
+
+use Gs2\Auth\Model\CreateOnceOnetimeTokenRequest;
+use Gs2\Auth\Model\CreateOnceOnetimeTokenResult;
+use Gs2\Auth\Model\CreateTimeOnetimeTokenRequest;
+use Gs2\Auth\Model\CreateTimeOnetimeTokenResult;
+use Gs2\Auth\Model\LoginRequest;
+use Gs2\Auth\Model\LoginResult;
+use Gs2\Auth\Model\LoginWithSignRequest;
+use Gs2\Auth\Model\LoginWithSignResult;
 
 /**
- * GS2-Inbox クライアント
+ * GS2 Auth API クライアント
  *
- * @author Game Server Services, inc. <contact@gs2.io>
- * @copyright Game Server Services, Inc.
+ * @author Game Server Services, Inc.
  *
  */
 class Gs2AuthClient extends AbstractGs2Client {
 
-	public static $ENDPOINT = 'auth';
-	
+	public static $ENDPOINT = "auth";
+
 	/**
-	 * コンストラクタ
-	 * 
-	 * @param string $region リージョン名
-	 * @param Gs2Credentials $credentials 認証情報
-	 * @param array $options オプション
-	 */
-	public function __construct($region, Gs2Credentials $credentials, $options = []) {
-		parent::__construct($region, $credentials, $options);
-	}
-	
-	/**
-	 * ログイン。<br>
-	 * <br>
-	 * GS2のサービスを利用するにあたってユーザの認証に必要となるアクセストークンを発行します。<br>
-	 * アクセストークンの発行には以下の情報が必要となります。<br>
-	 * <ul>
-	 * <li>ユーザID</li>
-	 * <li>サービスID</li>
-	 * </ul>
-	 * ユーザID には ログインするユーザのIDを指定してください。<br>
-	 * GS2 はアカウント管理機能を持ちませんので、ユーザID は別途アカウント管理システムで発行したIDを指定する必要があります。<br>
-	 * アカウントIDの文字種などには制限はありません。<br>
-	 * <br>
-	 * サービスID には任意の文字列を指定できます。<br>
-	 * ここで指定したサービスIDにもとづいて、その後アクセストークンで利用できるGSIを制限するのに利用します。<br>
-	 * <br>
-	 * サービスの制限は GSI(AWSのIAMのようなもの) のセキュリティポリシーで設定することができます。<br>
-	 * 例えば、GSIに設定されたセキュリティポリシーが service-0001 によるアクセスを許可する。という設定の場合、<br>
-	 * service-0002 というサービスIDで発行されたアクセストークンとGSIの組み合わせでリクエストを出してもリジェクトされるようになります。<br>
-	 * <br>
-	 * これによって、下記のようなアクセスコントロールを同一アカウント内で実現できます。<br>
-	 * <ul>
-	 * <li>GSI(A) 許可するアクション(GS2Inbox:*) 許可するサービス(service-0001)</li>
-	 * <li>GSI(B) 許可するアクション(GS2Stamina:*) 許可するサービス(service-0002)</li>
-	 * </ul>
-	 * この場合、service-0001 向けに発行されたアクセストークンと GSI(B) の組み合わせではサービスを利用することはできません。<br>
-	 * そのため、service-0001 向けのアクセストークンでは GS2-Stamina を利用することはできないことになります。<br>
+	 * コンストラクタ。
 	 *
-	 * @param array $request
-	 * * serviceId => サービスID
-	 * * userId => ユーザID
+	 * @param IGs2Credential $credential 認証情報
 	 */
-	public function login($request) {
-		if(is_null($request)) throw new NullPointerException();
-		$body = [];
-		if(array_key_exists('serviceId', $request)) $body['serviceId'] = $request['serviceId'];
-		if(array_key_exists('userId', $request)) $body['userId'] = $request['userId'];
-		$query = [];
-		return $this->doPost(
-				'Gs2Auth',
-				'Login',
-				Gs2AuthClient::$ENDPOINT,
-				'/login',
-				$body,
-				$query);
+	public function __construct(IGs2Credential $credential)
+	{
+		parent::__construct($credential);
 	}
+
+
+	/**
+	 * 実行回数制限付きワンタイムトークンを発行します<br>
+	 * <br>
+	 *
+	 * @param CreateOnceOnetimeTokenRequest $request リクエストパラメータ
+	 * @return CreateOnceOnetimeTokenResult 結果
+	 */
+
+	public function createOnceOnetimeToken(CreateOnceOnetimeTokenRequest $request): CreateOnceOnetimeTokenResult {
+
+		$body = [];
+		
+        $body['scriptName'] = $request->getScriptName();
+
+        if($request->getGrant() !== null) $body['grant'] = $request->getGrant();
+        if($request->getArgs() !== null) $body['args'] = $request->getArgs();
+        $alternativeParams = [
+            'headers' => [],
+        ];
+        if($request->getRequestId() !== null) {
+            $alternativeParams['headers']['X-GS2-REQUEST-ID'] = $request->getRequestId();
+        }
+
+        return new CreateOnceOnetimeTokenResult(
+                $this->doPost(
+                        Gs2Auth::MODULE,
+                        CreateOnceOnetimeTokenRequest::FUNCTION,
+                        self::$ENDPOINT,
+				        self::ENDPOINT_HOST. "/onetime/once/token",
+				        json_encode($body),
+                        $alternativeParams
+                )
+        );
+	}
+
+
+	/**
+	 * 1回のみ実行を許可するワンタイムトークンを発行します<br>
+	 * このトークンはスタミナの回復処理など、有効期間内だからといって何度も実行されたくない処理を1度だけ許可したい場合に発行します。<br>
+	 * <br>
+	 *
+	 * @param CreateTimeOnetimeTokenRequest $request リクエストパラメータ
+	 * @return CreateTimeOnetimeTokenResult 結果
+	 */
+
+	public function createTimeOnetimeToken(CreateTimeOnetimeTokenRequest $request): CreateTimeOnetimeTokenResult {
+
+		$body = [];
+		
+        $body['scriptName'] = $request->getScriptName();
+
+        $alternativeParams = [
+            'headers' => [],
+        ];
+        if($request->getRequestId() !== null) {
+            $alternativeParams['headers']['X-GS2-REQUEST-ID'] = $request->getRequestId();
+        }
+
+        return new CreateTimeOnetimeTokenResult(
+                $this->doPost(
+                        Gs2Auth::MODULE,
+                        CreateTimeOnetimeTokenRequest::FUNCTION,
+                        self::$ENDPOINT,
+				        self::ENDPOINT_HOST. "/onetime/time/token",
+				        json_encode($body),
+                        $alternativeParams
+                )
+        );
+	}
+
+
+	/**
+	 * ログイン処理を実行します<br>
+	 * <br>
+	 *
+	 * @param LoginRequest $request リクエストパラメータ
+	 * @return LoginResult 結果
+	 */
+
+	public function login(LoginRequest $request): LoginResult {
+
+		$body = [];
+		
+        $body['serviceId'] = $request->getServiceId();
+        $body['userId'] = $request->getUserId();
+
+        $alternativeParams = [
+            'headers' => [],
+        ];
+        if($request->getRequestId() !== null) {
+            $alternativeParams['headers']['X-GS2-REQUEST-ID'] = $request->getRequestId();
+        }
+
+        return new LoginResult(
+                $this->doPost(
+                        Gs2Auth::MODULE,
+                        LoginRequest::FUNCTION,
+                        self::$ENDPOINT,
+				        self::ENDPOINT_HOST. "/login",
+				        json_encode($body),
+                        $alternativeParams
+                )
+        );
+	}
+
+
+	/**
+	 * GS2-Accountの認証署名付きログイン処理を実行します<br>
+	 * <br>
+	 *
+	 * @param LoginWithSignRequest $request リクエストパラメータ
+	 * @return LoginWithSignResult 結果
+	 */
+
+	public function loginWithSign(LoginWithSignRequest $request): LoginWithSignResult {
+
+		$body = [];
+		
+        $body['serviceId'] = $request->getServiceId();
+        $body['userId'] = $request->getUserId();
+        $body['keyName'] = $request->getKeyName();
+        $body['sign'] = $request->getSign();
+
+        $alternativeParams = [
+            'headers' => [],
+        ];
+        if($request->getRequestId() !== null) {
+            $alternativeParams['headers']['X-GS2-REQUEST-ID'] = $request->getRequestId();
+        }
+
+        return new LoginWithSignResult(
+                $this->doPost(
+                        Gs2Auth::MODULE,
+                        LoginWithSignRequest::FUNCTION,
+                        self::$ENDPOINT,
+				        self::ENDPOINT_HOST. "/login/signed",
+				        json_encode($body),
+                        $alternativeParams
+                )
+        );
+	}
+
+
 }
